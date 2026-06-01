@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>単位変換ストップウォッチ</title>
     <style>
         body {
@@ -16,61 +16,133 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            touch-action: manipulation;
         }
 
         h1 {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 500;
-            letter-spacing: 1px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             color: #e0e0e0;
         }
 
-        /* 1秒の価値の入力エリア */
-        .config-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 40px;
+        /* --- 倍率入力エリア --- */
+        .config-wrapper {
             background: #1c1c1e;
-            padding: 10px 20px;
-            border-radius: 12px;
+            padding: 20px 30px;
+            border-radius: 16px;
             border: 1px solid #2c2c2e;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
         }
 
-        .config-container label {
+        .config-title {
             font-size: 14px;
             color: #aeaeb2;
+            margin-bottom: -10px;
         }
 
-        .config-container input {
+        /* 3つのボックスの見た目 */
+        .box-input-container {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        .digit-box {
+            width: 50px;
+            height: 60px;
             background: #2c2c2e;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 16px;
-            width: 80px;
-            text-align: center;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: bold;
             font-family: 'Courier New', Courier, monospace;
+            color: #0a84ff;
+            border: 2px solid transparent;
         }
 
-        .config-container input:focus {
-            outline: 2px solid #0a84ff;
+        .dot {
+            font-size: 32px;
+            font-weight: bold;
+            color: #fff;
+            padding-bottom: 5px;
         }
 
-        /* タイマー表示：等幅フォントとプロパティでブレを完全に防止 */
-        .timer-display {
+        /* iPadのキーボードを出すための透明な入力欄（ボックスの真上に被せる） */
+        #hidden-rate {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        #hidden-rate:focus + .boxes-visual .digit-box {
+            border-color: #0a84ff; /* フォーカス時に枠を青く光らせる */
+        }
+
+        /* スライダー（バー） */
+        .slider-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px; width: 24px;
+            border-radius: 50%;
+            background: #0a84ff;
+            cursor: pointer;
+            margin-top: -10px;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%; height: 6px;
+            cursor: pointer;
+            background: #48484a;
+            border-radius: 3px;
+        }
+
+        /* --- タイマー表示エリア --- */
+        .timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .normal-timer {
+            font-size: 24px;
+            color: #aeaeb2;
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 5px;
+        }
+
+        .converted-timer {
             font-size: 80px;
             font-weight: 300;
             font-family: 'Courier New', Courier, monospace;
             font-variant-numeric: tabular-nums; 
-            margin-bottom: 50px;
-            text-align: center;
             letter-spacing: 2px;
+            color: #fff;
         }
 
-        /* ボタンエリア */
+        /* --- ボタンエリア --- */
         .btn-container {
             display: flex;
             gap: 15px;
@@ -86,13 +158,12 @@
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            transition: background 0.2s, opacity 0.1s;
+            transition: opacity 0.1s;
         }
 
         .start-btn { background: #34c759; color: white; }
         .stop-btn { background: #ff3b30; color: white; }
         .reset-btn { background: #8e8e93; color: white; }
-
         button:active { opacity: 0.7; }
     </style>
 </head>
@@ -100,12 +171,31 @@
 
     <h1>単位変換ストップウォッチ</h1>
 
-    <div class="config-container">
-        <label for="time-value">1秒の価値:</label>
-        <input type="number" id="time-value" value="1.00" step="0.01" min="0.01">
+    <div class="config-wrapper">
+        <div class="config-title">1秒の価値（倍率）</div>
+        
+        <div class="box-input-container">
+            <input type="tel" id="hidden-rate" inputmode="numeric" value="100">
+            
+            <div class="boxes-visual" style="display: flex; gap: 5px; align-items: flex-end; pointer-events: none;">
+                <div class="digit-box" id="box-ones">1</div>
+                <div class="dot">.</div>
+                <div class="digit-box" id="box-tenths">0</div>
+                <div class="digit-box" id="box-hundredths">0</div>
+            </div>
+        </div>
+
+        <div class="slider-container">
+            <span style="color: #aeaeb2; font-size: 12px;">0.00</span>
+            <input type="range" id="rate-slider" min="0" max="999" value="100">
+            <span style="color: #aeaeb2; font-size: 12px;">9.99</span>
+        </div>
     </div>
 
-    <div class="timer-display" id="display">00:00:00.00</div>
+    <div class="timer-container">
+        <div class="normal-timer">通常: <span id="normal-display">00:00:00.00</span></div>
+        <div class="converted-timer" id="display">00:00:00.00</div>
+    </div>
 
     <div class="btn-container">
         <button class="start-btn" onclick="startTimer()">スタート</button>
@@ -114,43 +204,77 @@
     </div>
 
     <script>
+        // --- 倍率入力の連動ロジック ---
+        const hiddenRate = document.getElementById('hidden-rate');
+        const slider = document.getElementById('rate-slider');
+        const boxOnes = document.getElementById('box-ones');
+        const boxTenths = document.getElementById('box-tenths');
+        const boxHundredths = document.getElementById('box-hundredths');
+
+        // 数値を画面の3つのボックスに反映する関数
+        function updateDisplayBoxes(valStr) {
+            // 入力された文字を0埋めして必ず3桁にする（例: "5" -> "005"）
+            let padded = valStr.padStart(3, '0');
+            // もし4桁以上入力されたら、最新の3桁だけ残す（ATM方式）
+            if (padded.length > 3) padded = padded.slice(-3);
+
+            boxOnes.textContent = padded[0];
+            boxTenths.textContent = padded[1];
+            boxHundredths.textContent = padded[2];
+
+            return padded;
+        }
+
+        // キーボード入力時の処理
+        hiddenRate.addEventListener('input', function(e) {
+            // 数字以外を取り除く
+            let val = e.target.value.replace(/[^0-9]/g, '');
+            if (!val) val = '0';
+            
+            const processed = updateDisplayBoxes(val);
+            e.target.value = processed; // 透明な入力欄の値を修正
+            slider.value = parseInt(processed, 10); // スライダーも連動して動かす
+        });
+
+        // スライダー操作時の処理
+        slider.addEventListener('input', function(e) {
+            const valStr = String(e.target.value);
+            const processed = updateDisplayBoxes(valStr);
+            hiddenRate.value = processed; // 透明な入力欄も連動して書き換える
+        });
+
+        // --- ストップウォッチのロジック ---
         let startTime;
         let elapsedTime = 0;
         let timerInterval;
 
-        function updateTime() {
-            const now = Date.now();
-            const timePassed = now - startTime + elapsedTime;
-
-            // 入力された「1秒の価値（倍率）」を取得（デフォルトは1.00）
-            const rateInput = document.getElementById('time-value').value;
-            const rate = parseFloat(rateInput) || 1.00;
-
-            // 実際の経過時間に倍率をかけ算して「変換後のミリ秒」を計算
-            const convertedTime = timePassed * rate;
-
-            // 時間・分・秒・ミリ秒の計算
-            const totalSeconds = Math.floor(convertedTime / 1000);
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
-            
-            // 小数点第二位（10ミリ秒単位）の計算
-            const centiseconds = Math.floor((convertedTime % 1000) / 10);
+            const centiseconds = Math.floor((ms % 1000) / 10);
 
-            // 常に2桁で表示されるように文字を整える
-            const hDisplay = String(hours).padStart(2, '0');
-            const mDisplay = String(minutes).padStart(2, '0');
-            const sDisplay = String(seconds).padStart(2, '0');
-            const cDisplay = String(centiseconds).padStart(2, '0');
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+        }
 
-            document.getElementById('display').textContent = `${hDisplay}:${mDisplay}:${sDisplay}.${cDisplay}`;
+        function updateTime() {
+            const now = Date.now();
+            const timePassed = now - startTime + elapsedTime; // 通常の経過時間
+
+            // 1. 通常タイムの更新
+            document.getElementById('normal-display').textContent = formatTime(timePassed);
+
+            // 2. 変換タイムの更新 (3桁の数字を100で割って倍率にする。例: 123 -> 1.23)
+            const rate = parseInt(hiddenRate.value, 10) / 100;
+            const convertedTime = timePassed * rate;
+            document.getElementById('display').textContent = formatTime(convertedTime);
         }
 
         function startTimer() {
             if (!timerInterval) {
                 startTime = Date.now();
-                timerInterval = setInterval(updateTime, 10); // 10ミリ秒ごとに更新
+                timerInterval = setInterval(updateTime, 10);
             }
         }
 
@@ -166,6 +290,7 @@
             clearInterval(timerInterval);
             timerInterval = null;
             elapsedTime = 0;
+            document.getElementById('normal-display').textContent = "00:00:00.00";
             document.getElementById('display').textContent = "00:00:00.00";
         }
     </script>
