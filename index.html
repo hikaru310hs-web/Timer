@@ -37,6 +37,9 @@
             flex-direction: column;
             align-items: center;
             gap: 20px;
+            width: 85%;
+            max-width: 360px;
+            box-sizing: border-box;
         }
 
         .config-title {
@@ -75,7 +78,7 @@
             padding-bottom: 5px;
         }
 
-        /* iPadのキーボードを出すための透明な入力欄（ボックスの真上に被せる） */
+        /* 透明な入力欄 */
         #hidden-rate {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -84,10 +87,10 @@
         }
 
         #hidden-rate:focus + .boxes-visual .digit-box {
-            border-color: #0a84ff; /* フォーカス時に枠を青く光らせる */
+            border-color: #0a84ff;
         }
 
-        /* スライダー（バー） */
+        /* スライダー */
         .slider-container {
             width: 100%;
             display: flex;
@@ -123,6 +126,8 @@
             flex-direction: column;
             align-items: center;
             margin-bottom: 40px;
+            width: 100%;
+            text-align: center;
         }
 
         .normal-timer {
@@ -134,12 +139,13 @@
         }
 
         .converted-timer {
-            font-size: 80px;
+            font-size: 76px; /* iPadなど大画面用のサイズ */
             font-weight: 300;
             font-family: 'Courier New', Courier, monospace;
             font-variant-numeric: tabular-nums; 
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             color: #fff;
+            white-space: nowrap;
         }
 
         /* --- ボタンエリア --- */
@@ -165,6 +171,44 @@
         .stop-btn { background: #ff3b30; color: white; }
         .reset-btn { background: #8e8e93; color: white; }
         button:active { opacity: 0.7; }
+
+
+        /* ===================================================
+           📱 スマホ（画面幅が440px以下の端末）用の自動調整
+           =================================================== */
+        @media (max-width: 440px) {
+            h1 {
+                font-size: 18px;
+                margin-bottom: 15px;
+            }
+            .config-wrapper {
+                padding: 15px 15px;
+                margin-bottom: 25px;
+                gap: 15px;
+            }
+            .digit-box {
+                width: 42px; /* スマホ用にボックスを少しスリムに */
+                height: 52px;
+                font-size: 26px;
+            }
+            .dot {
+                font-size: 26px;
+            }
+            .normal-timer {
+                font-size: 18px; /* 通常タイマーをスマホ用に縮小 */
+            }
+            .converted-timer {
+                font-size: 46px; /* メインタイマーをスマホの画面幅に収まる大きさに縮小 */
+                letter-spacing: 0px;
+            }
+            .timer-container {
+                margin-bottom: 30px;
+            }
+            button {
+                padding: 12px 0;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -176,7 +220,6 @@
         
         <div class="box-input-container">
             <input type="tel" id="hidden-rate" inputmode="numeric" value="100">
-            
             <div class="boxes-visual" style="display: flex; gap: 5px; align-items: flex-end; pointer-events: none;">
                 <div class="digit-box" id="box-ones">1</div>
                 <div class="dot">.</div>
@@ -211,11 +254,8 @@
         const boxTenths = document.getElementById('box-tenths');
         const boxHundredths = document.getElementById('box-hundredths');
 
-        // 数値を画面の3つのボックスに反映する関数
         function updateDisplayBoxes(valStr) {
-            // 入力された文字を0埋めして必ず3桁にする（例: "5" -> "005"）
             let padded = valStr.padStart(3, '0');
-            // もし4桁以上入力されたら、最新の3桁だけ残す（ATM方式）
             if (padded.length > 3) padded = padded.slice(-3);
 
             boxOnes.textContent = padded[0];
@@ -225,22 +265,19 @@
             return padded;
         }
 
-        // キーボード入力時の処理
         hiddenRate.addEventListener('input', function(e) {
-            // 数字以外を取り除く
             let val = e.target.value.replace(/[^0-9]/g, '');
             if (!val) val = '0';
             
             const processed = updateDisplayBoxes(val);
-            e.target.value = processed; // 透明な入力欄の値を修正
-            slider.value = parseInt(processed, 10); // スライダーも連動して動かす
+            e.target.value = processed;
+            slider.value = parseInt(processed, 10);
         });
 
-        // スライダー操作時の処理
         slider.addEventListener('input', function(e) {
             const valStr = String(e.target.value);
             const processed = updateDisplayBoxes(valStr);
-            hiddenRate.value = processed; // 透明な入力欄も連動して書き換える
+            hiddenRate.value = processed;
         });
 
         // --- ストップウォッチのロジック ---
@@ -260,12 +297,12 @@
 
         function updateTime() {
             const now = Date.now();
-            const timePassed = now - startTime + elapsedTime; // 通常の経過時間
+            const timePassed = now - startTime + elapsedTime;
 
             // 1. 通常タイムの更新
             document.getElementById('normal-display').textContent = formatTime(timePassed);
 
-            // 2. 変換タイムの更新 (3桁の数字を100で割って倍率にする。例: 123 -> 1.23)
+            // 2. 変換タイムの更新
             const rate = parseInt(hiddenRate.value, 10) / 100;
             const convertedTime = timePassed * rate;
             document.getElementById('display').textContent = formatTime(convertedTime);
