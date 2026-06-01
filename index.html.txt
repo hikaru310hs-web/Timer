@@ -1,0 +1,144 @@
+ストップウォッチ
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>特殊進数ストップウォッチ</title>
+<style>
+body{
+background:#000;
+font-family:-apple-system,BlinkMacSystemFont;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+color:white;
+}
+.container{
+width:340px;
+text-align:center;
+}
+.title{
+font-size:22px;
+margin-bottom:20px;
+opacity:0.8;
+}
+.time{
+font-size:48px;
+font-weight:300;
+margin:10px 0;
+}
+.label{
+font-size:13px;
+color:#aaa;
+}
+.sliderBox{
+margin:25px 0;
+}
+input[type=range]{
+width:100%;
+}
+.buttons{
+display:flex;
+justify-content:space-between;
+margin-top:25px;
+}
+button{
+width:100px;
+height:60px;
+border-radius:30px;
+border:none;
+font-size:18px;
+color:white;
+cursor:pointer;
+}
+.start{background:#34c759;}
+.stop{background:#ff3b30;}
+.reset{background:#555;}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="title">特殊進数ストップウォッチ</div>
+<div class="label">通常時間</div>
+<div class="time" id="normal">0.00</div>
+<div class="label">特殊時間</div>
+<div class="time" id="special">0'00</div>
+<div class="sliderBox">
+<div class="label">
+1秒の価値: <span id="unitLabel">1.2</span> 秒
+</div>
+<input id="unitSlider" type="range" min="0.5" max="2" step="0.1" value="1.2">
+</div>
+<div class="buttons">
+<button class="start" onclick="start()">Start</button>
+<button class="stop" onclick="stop()">Stop</button>
+<button class="reset" onclick="reset()">Reset</button>
+</div>
+</div>
+
+<script>
+let startTime=0;
+let elapsed=0;
+let timer=null;
+let slider=document.getElementById("unitSlider");
+let label=document.getElementById("unitLabel");
+
+slider.oninput=function(){
+    label.innerText=this.value;
+    // タイマーが停止している時でも、スライダーを動かしたら特殊時間の表示を更新する
+    if(!timer) {
+        render();
+    }
+}
+
+function start(){
+    if(timer)return;
+    startTime=Date.now()-elapsed;
+    timer=setInterval(update,10);
+}
+
+function stop(){
+    clearInterval(timer);
+    timer=null;
+}
+
+function reset(){
+    clearInterval(timer);
+    timer=null;
+    elapsed=0;
+    document.getElementById("normal").innerText="0.00";
+    document.getElementById("special").innerText="0'00";
+}
+
+function update(){
+    elapsed=Date.now()-startTime;
+    render();
+}
+
+// 画面への描画ロジックを共通化
+function render(){
+    let seconds=elapsed/1000;
+    document.getElementById("normal").innerText=seconds.toFixed(2);
+    
+    let unit=parseFloat(slider.value);
+    let specialSeconds=seconds/unit;
+    let main=Math.floor(specialSeconds);
+    let fraction=specialSeconds-main;
+    
+    // 計算誤差を防ぐため、Math.round（四捨五入）に変更
+    let milli=Math.round(fraction*100); 
+    if(milli >= 100) { 
+        milli = 0;
+        main += 1;
+    }
+    
+    let milliStr=milli.toString().padStart(2,"0");
+    document.getElementById("special").innerText=main+"'"+milliStr;
+}
+</script>
+</body>
+</html>
