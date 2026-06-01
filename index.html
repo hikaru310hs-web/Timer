@@ -1,144 +1,173 @@
-ストップウォッチ
-
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>特殊進数ストップウォッチ</title>
-<style>
-body{
-background:#000;
-font-family:-apple-system,BlinkMacSystemFont;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-margin:0;
-color:white;
-}
-.container{
-width:340px;
-text-align:center;
-}
-.title{
-font-size:22px;
-margin-bottom:20px;
-opacity:0.8;
-}
-.time{
-font-size:48px;
-font-weight:300;
-margin:10px 0;
-}
-.label{
-font-size:13px;
-color:#aaa;
-}
-.sliderBox{
-margin:25px 0;
-}
-input[type=range]{
-width:100%;
-}
-.buttons{
-display:flex;
-justify-content:space-between;
-margin-top:25px;
-}
-button{
-width:100px;
-height:60px;
-border-radius:30px;
-border:none;
-font-size:18px;
-color:white;
-cursor:pointer;
-}
-.start{background:#34c759;}
-.stop{background:#ff3b30;}
-.reset{background:#555;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>単位変換ストップウォッチ</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            margin-bottom: 30px;
+            color: #e0e0e0;
+        }
+
+        /* 1秒の価値の入力エリア */
+        .config-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 40px;
+            background: #1c1c1e;
+            padding: 10px 20px;
+            border-radius: 12px;
+            border: 1px solid #2c2c2e;
+        }
+
+        .config-container label {
+            font-size: 14px;
+            color: #aeaeb2;
+        }
+
+        .config-container input {
+            background: #2c2c2e;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 16px;
+            width: 80px;
+            text-align: center;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .config-container input:focus {
+            outline: 2px solid #0a84ff;
+        }
+
+        /* タイマー表示：等幅フォントとプロパティでブレを完全に防止 */
+        .timer-display {
+            font-size: 80px;
+            font-weight: 300;
+            font-family: 'Courier New', Courier, monospace;
+            font-variant-numeric: tabular-nums; 
+            margin-bottom: 50px;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+
+        /* ボタンエリア */
+        .btn-container {
+            display: flex;
+            gap: 15px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: 500;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.1s;
+        }
+
+        .start-btn { background: #34c759; color: white; }
+        .stop-btn { background: #ff3b30; color: white; }
+        .reset-btn { background: #8e8e93; color: white; }
+
+        button:active { opacity: 0.7; }
+    </style>
 </head>
 <body>
-<div class="container">
-<div class="title">特殊進数ストップウォッチ</div>
-<div class="label">通常時間</div>
-<div class="time" id="normal">0.00</div>
-<div class="label">特殊時間</div>
-<div class="time" id="special">0'00</div>
-<div class="sliderBox">
-<div class="label">
-1秒の価値: <span id="unitLabel">1.2</span> 秒
-</div>
-<input id="unitSlider" type="range" min="0.5" max="2" step="0.1" value="1.2">
-</div>
-<div class="buttons">
-<button class="start" onclick="start()">Start</button>
-<button class="stop" onclick="stop()">Stop</button>
-<button class="reset" onclick="reset()">Reset</button>
-</div>
-</div>
 
-<script>
-let startTime=0;
-let elapsed=0;
-let timer=null;
-let slider=document.getElementById("unitSlider");
-let label=document.getElementById("unitLabel");
+    <h1>単位変換ストップウォッチ</h1>
 
-slider.oninput=function(){
-    label.innerText=this.value;
-    // タイマーが停止している時でも、スライダーを動かしたら特殊時間の表示を更新する
-    if(!timer) {
-        render();
-    }
-}
+    <div class="config-container">
+        <label for="time-value">1秒の価値:</label>
+        <input type="number" id="time-value" value="1.00" step="0.01" min="0.01">
+    </div>
 
-function start(){
-    if(timer)return;
-    startTime=Date.now()-elapsed;
-    timer=setInterval(update,10);
-}
+    <div class="timer-display" id="display">00:00:00.00</div>
 
-function stop(){
-    clearInterval(timer);
-    timer=null;
-}
+    <div class="btn-container">
+        <button class="start-btn" onclick="startTimer()">スタート</button>
+        <button class="stop-btn" onclick="stopTimer()">ストップ</button>
+        <button class="reset-btn" onclick="resetTimer()">リセット</button>
+    </div>
 
-function reset(){
-    clearInterval(timer);
-    timer=null;
-    elapsed=0;
-    document.getElementById("normal").innerText="0.00";
-    document.getElementById("special").innerText="0'00";
-}
+    <script>
+        let startTime;
+        let elapsedTime = 0;
+        let timerInterval;
 
-function update(){
-    elapsed=Date.now()-startTime;
-    render();
-}
+        function updateTime() {
+            const now = Date.now();
+            const timePassed = now - startTime + elapsedTime;
 
-// 画面への描画ロジックを共通化
-function render(){
-    let seconds=elapsed/1000;
-    document.getElementById("normal").innerText=seconds.toFixed(2);
-    
-    let unit=parseFloat(slider.value);
-    let specialSeconds=seconds/unit;
-    let main=Math.floor(specialSeconds);
-    let fraction=specialSeconds-main;
-    
-    // 計算誤差を防ぐため、Math.round（四捨五入）に変更
-    let milli=Math.round(fraction*100); 
-    if(milli >= 100) { 
-        milli = 0;
-        main += 1;
-    }
-    
-    let milliStr=milli.toString().padStart(2,"0");
-    document.getElementById("special").innerText=main+"'"+milliStr;
-}
-</script>
+            // 入力された「1秒の価値（倍率）」を取得（デフォルトは1.00）
+            const rateInput = document.getElementById('time-value').value;
+            const rate = parseFloat(rateInput) || 1.00;
+
+            // 実際の経過時間に倍率をかけ算して「変換後のミリ秒」を計算
+            const convertedTime = timePassed * rate;
+
+            // 時間・分・秒・ミリ秒の計算
+            const totalSeconds = Math.floor(convertedTime / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            // 小数点第二位（10ミリ秒単位）の計算
+            const centiseconds = Math.floor((convertedTime % 1000) / 10);
+
+            // 常に2桁で表示されるように文字を整える
+            const hDisplay = String(hours).padStart(2, '0');
+            const mDisplay = String(minutes).padStart(2, '0');
+            const sDisplay = String(seconds).padStart(2, '0');
+            const cDisplay = String(centiseconds).padStart(2, '0');
+
+            document.getElementById('display').textContent = `${hDisplay}:${mDisplay}:${sDisplay}.${cDisplay}`;
+        }
+
+        function startTimer() {
+            if (!timerInterval) {
+                startTime = Date.now();
+                timerInterval = setInterval(updateTime, 10); // 10ミリ秒ごとに更新
+            }
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                elapsedTime += Date.now() - startTime;
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            elapsedTime = 0;
+            document.getElementById('display').textContent = "00:00:00.00";
+        }
+    </script>
 </body>
 </html>
