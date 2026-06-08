@@ -17,6 +17,7 @@
             margin: 0;
             overflow: hidden;
             touch-action: manipulation;
+            position: relative; /* 右上ボタンの基準線 */
         }
 
         h1 {
@@ -24,6 +25,76 @@
             font-weight: 500;
             margin-bottom: 20px;
             color: #e0e0e0;
+        }
+
+        /* --- ❓ 右上のヘルプボタン --- */
+        .help-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 36px;
+            height: 36px;
+            background: #1c1c1e;
+            border: 1px solid #2c2c2e;
+            color: #0a84ff;
+            border-radius: 50%;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: background 0.2s;
+        }
+        .help-btn:active {
+            background: #2c2c2e;
+        }
+
+        /* --- 📦 ポップアップ（説明画面）のスタイル --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.75); /* 背景を暗く */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: #1c1c1e;
+            border: 1px solid #2c2c2e;
+            padding: 25px;
+            border-radius: 16px;
+            width: 85%;
+            max-width: 340px;
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .modal-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #e5e5ea;
+            margin-bottom: 20px;
+            white-space: pre-wrap; /* 改行を有効に */
+        }
+        .modal-close-btn {
+            width: 100%;
+            padding: 12px 0;
+            background: #0a84ff;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         /* --- 倍率入力エリア --- */
@@ -110,7 +181,7 @@
             margin-top: -10px;
         }
 
-        input[type="range"]::-webkit-slider-runnable-track {
+        input[type="range"]::-webkit-slider-run runnable-track {
             width: 100%; height: 6px;
             cursor: pointer;
             background: #48484a;
@@ -145,11 +216,11 @@
             white-space: nowrap;
         }
 
-        /* --- 📋 ラップタイム表示エリア（新規追加） --- */
+        /* --- ラップタイム表示エリア --- */
         .lap-container {
             width: 90%;
             max-width: 400px;
-            height: 160px; /* 縦幅の余裕を活かした高さ指定 */
+            height: 160px;
             overflow-y: auto;
             margin-bottom: 25px;
             border-top: 1px solid #2c2c2e;
@@ -204,7 +275,7 @@
         .start-btn { background: #34c759; color: white; }
         .stop-btn { background: #ff3b30; color: white; }
         .reset-btn { background: #3a3a3c; color: #fff; }
-        .lap-btn { background: #2c2c2e; color: #0a84ff; } /* Apple純正風の青文字アクセント */
+        .lap-btn { background: #2c2c2e; color: #0a84ff; }
         button:active { opacity: 0.7; }
 
         /* --- スマホ用の自動調整 --- */
@@ -219,14 +290,23 @@
             .lap-container { height: 120px; margin-bottom: 20px; }
             .lap-table { font-size: 14px; }
             button { padding: 12px 0; font-size: 16px; }
+            .help-btn { top: 15px; right: 15px; width: 32px; height: 32px; font-size: 18px; }
         }
     </style>
 </head>
 <body>
 
+    <div class="help-btn" onclick="openModal()">？</div>
+
+    <div class="modal-overlay" id="help-modal" onclick="closeModalOutside(event)">
+        <div class="modal-content">
+            <div class="modal-text">1秒の単位を変えることで、水泳や陸上などのタイムを競う競技の練習において、自分の限界を錯覚させ、精神面からパフォーマンスを向上させることができると考え制作しました。</div>
+            <button class="modal-close-btn" onclick="closeModal()">閉じる</button>
+        </div>
+    </div>
+
     <h1>単位変換ストップウォッチ</h1>
 
-    <!-- 設定エリア -->
     <div class="config-wrapper">
         <div class="config-title">1秒の価値（倍率）</div>
         
@@ -240,7 +320,6 @@
             </div>
         </div>
 
-        <!-- スライダー -->
         <div class="slider-container">
             <span style="color: #aeaeb2; font-size: 12px;">0.00</span>
             <input type="range" id="rate-slider" min="0" max="999" value="100">
@@ -248,13 +327,11 @@
         </div>
     </div>
 
-    <!-- タイマー表示エリア -->
     <div class="timer-container">
         <div class="normal-timer">通常: <span id="normal-display">00:00:00.00</span></div>
         <div class="converted-timer" id="display">00:00:00.00</div>
     </div>
 
-    <!-- 📋 ラップタイム表示エリア（時間とボタンの間） -->
     <div class="lap-container" id="lap-container" style="visibility: hidden;">
         <table class="lap-table">
             <thead>
@@ -265,12 +342,10 @@
                 </tr>
             </thead>
             <tbody id="lap-list">
-                <!-- ここに動的にラップが追加されます -->
             </tbody>
         </table>
     </div>
 
-    <!-- 操作ボタン -->
     <div class="btn-container">
         <button class="start-btn" onclick="startTimer()">スタート</button>
         <button class="stop-btn" onclick="stopTimer()">ストップ</button>
@@ -278,6 +353,19 @@
     </div>
 
     <script>
+        // --- ポップアップ制御ロジック ---
+        function openModal() {
+            document.getElementById('help-modal').classList.add('active');
+        }
+        function closeModal() {
+            document.getElementById('help-modal').classList.remove('active');
+        }
+        function closeModalOutside(e) {
+            if (e.target.id === 'help-modal') {
+                closeModal();
+            }
+        }
+
         // --- 倍率入力の連動ロジック ---
         const hiddenRate = document.getElementById('hidden-rate');
         const slider = document.getElementById('rate-slider');
@@ -317,8 +405,8 @@
         let timerInterval;
         
         let lapCount = 0;
-        let lastLapTime = 0; // 前回のラップ時の変換タイム(ms)
-        let currentConvertedTime = 0; // 現在の変換タイム(ms)
+        let lastLapTime = 0;
+        let currentConvertedTime = 0;
 
         function formatTime(ms) {
             const totalSeconds = Math.floor(ms / 1000);
@@ -334,10 +422,8 @@
             const now = Date.now();
             const timePassed = now - startTime + elapsedTime;
 
-            // 1. 通常タイムの更新
             document.getElementById('normal-display').textContent = formatTime(timePassed);
 
-            // 2. 変換タイムの更新
             const rate = parseInt(hiddenRate.value, 10) / 100;
             currentConvertedTime = timePassed * rate;
             document.getElementById('display').textContent = formatTime(currentConvertedTime);
@@ -348,7 +434,6 @@
                 startTime = Date.now();
                 timerInterval = setInterval(updateTime, 10);
                 
-                // 🔄 リセットボタンを「ラップ」ボタンに変形
                 const subBtn = document.getElementById('sub-btn');
                 subBtn.textContent = "ラップ";
                 subBtn.className = "lap-btn";
@@ -362,7 +447,6 @@
                 timerInterval = null;
                 elapsedTime += Date.now() - startTime;
                 
-                // 🔄 ラップボタンを「リセット」ボタンに戻す
                 const subBtn = document.getElementById('sub-btn');
                 subBtn.textContent = "リセット";
                 subBtn.className = "reset-btn";
@@ -373,14 +457,11 @@
         function pushLap() {
             lapCount++;
             
-            // 最初のラップが押されたらエリアを可視化
             const lapContainer = document.getElementById('lap-container');
             lapContainer.style.visibility = "visible";
 
-            // 区間タイム（スプリット）の計算
             const splitTime = currentConvertedTime - lastLapTime;
             
-            // テーブルに新しい行を作成
             const lapList = document.getElementById('lap-list');
             const row = document.createElement('tr');
             
@@ -390,10 +471,8 @@
                 <td>${formatTime(currentConvertedTime)}</td>
             `;
             
-            // 純正と同じく、最新のラップが一番上（リストの先頭）に来るように挿入
             lapList.insertBefore(row, lapList.firstChild);
             
-            // 次のラップ計算のために現在の総変換タイムを記憶
             lastLapTime = currentConvertedTime;
         }
 
@@ -408,11 +487,9 @@
             document.getElementById('normal-display').textContent = "00:00:00.00";
             document.getElementById('display').textContent = "00:00:00.00";
             
-            // ラップデータを初期化して非表示に戻す
             document.getElementById('lap-list').innerHTML = "";
             document.getElementById('lap-container').style.visibility = "hidden";
             
-            // ボタン状態を完全にリセットに戻す
             const subBtn = document.getElementById('sub-btn');
             subBtn.textContent = "リセット";
             subBtn.className = "reset-btn";
